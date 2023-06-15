@@ -1,0 +1,202 @@
+import matplotlib.pyplot as plt
+import random
+
+def down_force(charges, bee_location):
+    """Assuming moving along x-axis only for now."""
+    total_force = 0
+    for charge in charges:
+        total_force += (charges[charge]*charge[1])/((bee_location-charge[0])**2 + charge[1]**2)**(5/2)
+    return total_force
+
+
+def generate_charges(N, plot = True):
+    """Creates a dictionary of N point charge locations and their magnitudes,
+    and visually plots them."""
+    charges = {}
+    for _ in range(N):
+        charges[(random.random()*10, random.random()*10)] = (random.random()-0.5)*4
+        
+    if plot == True:
+        x = []   # Find locations
+        y = []
+        mag = []
+        for charge in charges:
+            x.append(charge[0])
+            y.append(charge[1])
+            mag.append(charges[charge])   # Find charges
+
+        fig, ax = plt.subplots()
+        plt.plot(x, y, 'o')
+        for i in range(N):
+            ax.annotate(mag[i], xy=(x[i]+0.1, y[i]+0.1), xytext=(x[i]+1, y[i]+1), 
+                        arrowprops=dict(facecolor='black', shrink=0.05),
+                        )
+        plt.xlim(0, 10)
+        plt.ylim(0, 10)
+        plt.show()   # Plot charge locations and charges
+    
+    return charges
+
+
+def rotate_charges(charges, turning_point):
+    
+    charges_2 = {}
+    for charge in charges:
+        new_charge = (charge[1], turning_point - charge[0])
+        charges_2[new_charge] = charges[charge]
+    return charges_2
+
+def shift_charges(charges, turning_point):
+    
+    charges_2 = {}
+    for charge in charges:
+        new_charge = (charge[0], charge[1] - turning_point)
+        charges_2[new_charge] = charges[charge]
+    return charges_2
+
+
+def minimum_maximum(bee_pos, charges, forces):
+    l = forces
+    # Remove identical neighbors
+    l = [x for x,y in zip(l[0:], l[1:]) if x != y] + [l[-1]]
+    # Append [0] to both endpoints
+    l = [0] + l + [0]
+    # Retain elements where each of their neighbors are greater than them
+    local_min = [y for x, y, z in zip(l[0:], l[1:], l[2:]) if x > y < z]
+    local_max = [y for x, y, z in zip(l[0:], l[1:], l[2:]) if x < y > z]
+    peaks = local_min + local_max
+    
+    peak_coords = {}
+    for peak in peaks:
+        for x in bee_pos:
+            if down_force(charges, x) == peak:
+                peak_coords[x] = peak
+    
+    return peak_coords
+
+
+def force_measure_v3(charges, D):
+    """Computes and plots the vertical forces acting on the hair as it
+    moves along a hor/vert path and finds its 'peaks'."""
+    bee_pos = [(10/10000)*i for i in range(10001)]   
+    # width of field is 10, split up into 10000 increments
+    
+    forces = [down_force(charges, x) for x in bee_pos]
+
+    coord_peaks = minimum_maximum(bee_pos, charges, forces)
+    peakx = [peak for peak in coord_peaks]
+    peaky = [coord_peaks[peak] for peak in coord_peaks]
+    
+    if len(coord_peaks) > 1:
+        turn_point = max(peakx) - D
+    elif len(coord_peaks) == 1:
+        turn_point = peakx[0] + D
+    else:
+        turn_point = 0
+    
+    plt.plot(bee_pos, forces)
+    plt.plot(peakx, peaky, 'o')
+    plt.plot(turn_point, 0, 'x', label = turn_point)
+    plt.xlim(0, 10)
+    plt.legend()
+    plt.show()
+    
+    num_peaks = len(peakx)
+    
+    return bee_pos, forces, coord_peaks, num_peaks, turn_point   
+    # x_vals of bee, vert force on hair, coords of peaks, number of peaks, turning point
+
+
+def plot_results(N, charges, peak_xs, peak_ys, turn_points):
+    
+    x = []   # Find locations
+    y = []
+    mag = []
+    for charge in charges:
+        x.append(charge[0])
+        y.append(charge[1])
+        mag.append(charges[charge])   # Find charges
+
+    plt.figure(figsize=(10,10))
+    ax = plt.gca()
+    plt.plot(x, y, 'o')
+    for i in range(N):
+        ax.annotate(mag[i], xy=(x[i]+0.1, y[i]+0.1), xytext=(x[i]+1, y[i]+1), 
+                    arrowprops=dict(facecolor='black', shrink=0.05),
+                    )
+    plt.xlim(0, 10)
+    plt.ylim(0, 10)
+    
+    for ys in peak_ys:
+        plt.hlines(ys, 0, 10, color = 'r', linestyle = 'dotted', label = ys) # HERE ARE THE GREEN/RED DOTTED LINES!
+    for xs in peak_xs:
+        plt.vlines(xs, 0, 10, color = 'g', linestyle = 'dotted', label = xs)
+    for i in range(len(turn_points)-1):
+        if i % 2 == 0:
+            plt.hlines(turn_points[i], 0, 10, color = 'b', linestyle = 'dashed')
+            ax.annotate(i+1, xy=(8, turn_points[i]), xytext=(7.5, turn_points[i]-0.5), 
+                    arrowprops=dict(facecolor='grey', shrink=0.005),
+                    )
+        else:
+            plt.vlines(turn_points[i], 0, 10, color = 'b', linestyle = 'dashed')
+            ax.annotate(i+1, xy=(turn_points[i], 8), xytext=(turn_points[i]-0.5, 7.5), 
+                    arrowprops=dict(facecolor='grey', shrink=0.005),
+                    )
+    
+    #plt.legend()
+    
+    plt.show()
+
+
+def N_charge_locator(N, D):
+    
+    charges = generate_charges(N, False) # generate the random charges
+    P = 2 # number of paths to take - will be updated as required
+    T = 0 # number of paths taken so far - also will be updated
+    turn_point = 0
+    peak_xs = []
+    peak_ys = []
+    turn_points = [0]
+    
+    while P > 0:
+        if T % 4 == 0:
+            charges_edit = shift_charges(charges, turn_point) # for first path, turn_point = 0 so no shift happens
+            a, b, coord_peaks, num_peaks, turn_point = force_measure_v3(charges_edit, D) # complete horizontal pass
+            peak_xs += [peak for peak in coord_peaks if peak not in peak_xs] # note x values of possible charge locations
+            T += 1
+            P = max(P, num_peaks) - T # upper bound for number of charges
+            turn_points.append(turn_point)
+        
+        if T % 4 == 1:
+            charges_edit = rotate_charges(charges, turn_point) # rotate charges 90 degrees from original 
+                                                                # (about the previous turning point)
+            a, b, coord_peaks, num_peaks, turn_point = force_measure_v3(charges_edit, D) # complete vertical pass
+            peak_ys += [peak for peak in coord_peaks if peak not in peak_ys] # note y values of peaks
+            T += 1
+            P = max(P, num_peaks) - T
+            turn_points.append(turn_point)
+        
+        if T % 4 == 2:
+            charges_edit = shift_charges(charges, turn_point) # shift the original charges 
+                                                            # by the previous turning point
+            a, b, coord_peaks, num_peaks, turn_point = force_measure_v3(charges_edit, D)
+            peak_xs += [peak for peak in coord_peaks if peak not in peak_xs]
+            T += 1
+            P = max(P, num_peaks) - T
+            turn_points.append(turn_point)
+        
+        if T % 4 == 3:
+            charges_edit = rotate_charges(charges, 10) # 10 is width of field
+            charges_edit = shift_charges(charges_edit, 10 - turn_point)
+            a, b, coord_peaks, num_peaks, turn_point = force_measure_v3(charges_edit, D)
+            peak_ys += [peak for peak in coord_peaks if peak not in peak_ys]
+            T += 1
+            P = max(P, num_peaks) - T
+            turn_points.append(turn_point)
+            
+    #print(peak_xs, peak_ys, [charge for charge in charges])
+    
+    plot_results(N, charges, peak_xs, peak_ys, turn_points)
+
+print("Here we can narrow down the possible locations of point charges.")
+N_charge_locator(2, 0.75)
