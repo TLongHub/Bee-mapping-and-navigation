@@ -140,3 +140,40 @@ plt.vlines(turn_point, min(forces), max(forces), 'g', 'dashed', label = turn_poi
 plt.xlim(0, 10)
 plt.legend()
 plt.show()
+
+
+#Now we want to determine polarity with the first path
+    #If we first fly along the edge of our field, we know that every charge will
+    #  be on one side of us, thus we can determine their polarity
+
+#Assume a 10x10 field
+def find_polarities(N):
+    """Determine the polarities of charges from an initial flight path."""
+    charges = generate_charges(N)
+    start = (0, 0)
+    stop = (10, 0)
+    path, path_progress, forces, peaks, turn_point, new_charges = fly_path(start, stop, charges, 1)
+    polarities = []
+    for x in peaks:
+        if peaks[x] > 0:
+            polarities.append(True)
+        else:
+            polarities.append(False)
+    print(polarities)
+
+    peak_x = [peak for peak in peaks]
+    peak_val = [peaks[peak] for peak in peaks]
+
+    plt.figure(figsize=(10,10))
+    plt.plot(path_progress, forces)
+    for i in range(len(peak_x)):
+        if polarities[i] == True: #If charge positive
+            plt.plot(peak_x, peak_val, 'o', color = 'r')
+        elif polarities[i] == False: #If charge negative
+            plt.plot(peak_x, peak_val, 'o', color = 'g')
+    plt.vlines(turn_point, min(forces), max(forces), 'b', 'dashed', label = turn_point)
+    plt.xlim(0, 10)
+    plt.legend()
+    plt.show()
+
+find_polarities(1)
