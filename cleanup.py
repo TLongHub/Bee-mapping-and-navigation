@@ -95,9 +95,48 @@ def fly_path(start, stop, charges, D):
     #Find turning point for path (distance D before last peak)
     turn_point = max(peaks) - D
 
-    return path, forces, peaks, turn_point
+    return path, path_progress, forces, peaks, turn_point, new_charges
 
 
+#Now we can test the functions so far
 
-charges = generate_charges(1)
-fly_path((0, 0), (10, 0), charges, 0.5)
+charges = generate_charges(1, False)
+path, path_progress, forces, peaks, turn_point, new_charges = fly_path((0, 0), (10, 0), charges, 0.5)
+
+peak_x = [peak for peak in peaks]
+peak_val = [peaks[peak] for peak in peaks]
+
+
+#Let's try and plot some visuals
+
+N = 1 #Number of point charges
+x = []   # Find locations
+y = []
+mag = []
+for charge in charges:
+    x.append(charge[0])
+    y.append(charge[1])
+    mag.append(charges[charge])   # Find charges
+
+plt.figure(figsize=(10,10)) #Plot 10x10 figure
+ax = plt.gca()
+plt.plot(x, y, 'o') #Plot the point charges
+for i in range(N):
+    ax.annotate(mag[i], xy=(x[i]+0.1, y[i]+0.1), xytext=(x[i]+1, y[i]+1), #Annotate the charges with magnitude
+                arrowprops=dict(facecolor='black', shrink=0.05),
+                )
+plt.vlines(peak_x, 0, 10)
+plt.xlim(0, 10)
+plt.ylim(0, 10)
+plt.show()
+
+
+#Plot the force/progress graph
+
+plt.figure(figsize=(10,10))
+plt.plot(path_progress, forces)
+plt.plot(peak_x, peak_val, 'o')
+plt.vlines(turn_point, min(forces), max(forces), 'g', 'dashed', label = turn_point)
+plt.xlim(0, 10)
+plt.legend()
+plt.show()
