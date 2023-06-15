@@ -1,5 +1,11 @@
 import math, numpy, random, matplotlib.pyplot as plt
 
+def euclidean_distance(x, y):
+    """Calculates the Euclidean distance between points x and y in R^2."""
+    z = (y[0] - x[0], y[1] - x[1])
+    dist_sq = z[0]**2 + z[1]**2
+    dist = dist_sq**0.5
+    return dist
 
 def down_force(charges, bee_location):
     """Assuming moving along x-axis only for now."""
@@ -45,6 +51,8 @@ def fly_path(start, stop, charges, D):
     dx = (stop[0]-start[0])/increments #Change in x
     dy = (stop[1]-start[1])/increments #Change in y
     path = [(start[0] + dx*i, start[1] + dy*i) for i in range(increments)] #The path flown
+    length = euclidean_distance(start, stop) #The length of the path
+    path_progress = [0 + i*(length/increments) for i in range(increments +1)]
     
     #Now we need to measure the downward force on the hair assuming the path is the x-axis
         #First, we need to translate and rotate the current points in space (charges)
@@ -62,12 +70,12 @@ def fly_path(start, stop, charges, D):
     new_charges = {}
     for charge in charges: #Need to put charges into position vectors
         charge_vector = numpy.array([charge[0], charge[1], 0]) #Old coordinates charge vector
-        tran_ch_vec = numpy.matmul(transformation, charge_vector) #The transformed charge vector in new coordinates
-        new_charges[tran_ch_vec] = charges[charge] #New dictionary with updated coordinates
-    
+        tran_ch_vec = (numpy.matmul(transformation, charge_vector)) #The transformed charge vector in new coordinates
+        new_charges[(tran_ch_vec[0], tran_ch_vec[1])] = charges[charge] #New dictionary with updated coordinates
+
         #Finally, we can compute the downward forces acting on the hair
-    forces = [down_force(charges, x) for x in path] #A list of the force on the hair at each point along the path
-    
+    forces = [down_force(new_charges, x) for x in path_progress] #A list of the force on the hair at each point along the path
+
     #We now need to find all the nim/max points
     l = forces #Copy forces
     l = [x for x,y in zip(l[0:], l[1:]) if x != y] + [l[-1]] #Remove identical neighbors
@@ -80,11 +88,16 @@ def fly_path(start, stop, charges, D):
     #Note the x-value for the location of the mins/maxs
     peaks = {} #X-value (location) and peak value (prop to magnitude but not polarity)
     for peak in peak_vals:
-        for x in path:
-            if down_force(charges, x) == peak:
+        for x in path_progress:
+            if down_force(new_charges, x) == peak:
                 peaks[x] = peak
     
     #Find turning point for path (distance D before last peak)
     turn_point = max(peaks) - D
 
     return path, forces, peaks, turn_point
+
+
+
+charges = generate_charges(1)
+fly_path((0, 0), (10, 0), charges, 0.5)
