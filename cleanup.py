@@ -58,10 +58,13 @@ def fly_path(start, stop, charges, D):
         #First, we need to translate and rotate the current points in space (charges)
         # to fit the new axis
         #So we find the angle of rotation (angle between x-axis and path)
-    gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
-    theta = math.atan(gradient) #The angle between x-axis and path
-    h = start[0] #Difference in x from old origin to new origin
-    k = start[1] #The same for y
+    if start[0] != stop[0]:
+        gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
+        theta = math.atan(gradient) #The angle between x-axis and path
+    else:
+        theta = numpy.pi/2 #To get around division by zero problem
+    h = 0 - start[0] #Difference in x from old origin to new origin
+    k = 0 - start[1] #The same for y
         #Now, we formulate a transformation matrix
     transformation = numpy.array([[math.cos(theta), -math.sin(theta), h*math.cos(theta) - k*math.sin(theta)],
                                    [math.sin(theta), math.cos(theta), h*math.sin(theta) + k*math.cos(theta)],
@@ -70,7 +73,7 @@ def fly_path(start, stop, charges, D):
         #Next, we apply the matrix
     new_charges = {}
     for charge in charges: #Need to put charges into position vectors
-        charge_vector = numpy.array([charge[0], charge[1], 0]) #Old coordinates charge vector
+        charge_vector = numpy.array([charge[0], charge[1], 1]) #Old coordinates charge vector
         tran_ch_vec = (numpy.matmul(transformation, charge_vector)) #The transformed charge vector in new coordinates
         new_charges[(tran_ch_vec[0], tran_ch_vec[1])] = charges[charge] #New dictionary with updated coordinates
 
@@ -100,14 +103,14 @@ def fly_path(start, stop, charges, D):
     # and the peak lines
     peak_lines = []
     for x in peaks: #Form the peak lines in transformed set up
-        peak_lines.append([numpy.array([x, 0, 0]), numpy.array([x, 10, 0])])
+        peak_lines.append([numpy.array([x, -10, 1]), numpy.array([x, 10, 1])])
     
     og_peak_lines = []
     for line in peak_lines: #Apply inverse matrix to get 'original' peak lines
         og_peak_lines.append([numpy.matmul(inverse, line[0]), numpy.matmul(inverse, line[1])])
     og_peak_pos = []
     for x in peaks: #Apply inverse matrix to get 'original' peak locations along path
-        og_peak_pos.append(numpy.matmul(inverse, numpy.array([x, 0, 0])))
+        og_peak_pos.append(numpy.matmul(inverse, numpy.array([x, 0, 1])))
     
 
     return path, path_progress, forces, turn_point, peaks, og_peak_pos, peak_lines, og_peak_lines
@@ -166,7 +169,7 @@ def plot_forces(forces, path_progress, peaks, turn_point):
     plt.show()
 
     #Plotting the actual and possible charge locations
-def plot_field(charges, path, og_peak_pos, og_peak_lines):
+def plot_field(charges, path, og_peak_lines):
     N = len(charges) #Number of point charges
     x = []   # Find locations
     y = []
@@ -184,16 +187,16 @@ def plot_field(charges, path, og_peak_pos, og_peak_lines):
                     arrowprops=dict(facecolor='black', shrink=0.05),
                     )
         
-    #Extract the path points
+    #Extract the path points of each path
     path_x = []
     path_y = []
     for point in path:
         path_x.append(point[0])
         path_y.append(point[1])
     #Plot the path
-    plt.plot(path_x, path_y, 'b', label = 'Path')
+    plt.plot(path_x, path_y, 'b', label = path)
 
-    #Extract the peak paths
+    #Extract the peak paths of each path
     peak_line_x = []
     peak_line_y = []
     for line in og_peak_lines:
@@ -208,8 +211,12 @@ def plot_field(charges, path, og_peak_pos, og_peak_lines):
     plt.show()
 
 
-charges = generate_charges(1, False)
-path, path_progress, forces, turn_point, peaks, og_peak_pos, peak_lines, og_peak_lines = fly_path((0, 5), (10, 5), charges, 0.5)
+charges = generate_charges(2, False)
+path_1, path_progress, forces, turn_point, peaks, og_peak_pos, peak_lines, og_peak_lines_1 = fly_path((0, 5), (10, 5), charges, 0.5)
 plot_forces(forces, path_progress, peaks, turn_point)
-plot_field(charges, path, og_peak_pos, og_peak_lines)
+path_2, path_progress, forces, turn_point, peaks, og_peak_pos, peak_lines, og_peak_lines_2 = fly_path((5, 10), (5, 0), charges, 0.5)
+plot_forces(forces, path_progress, peaks, turn_point)
 
+#paths = [path_1, path_2]
+#og_peak_list = [og_peak_lines_1, og_peak_lines_2]
+plot_field(charges, path_1, og_peak_lines_1)
