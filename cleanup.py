@@ -96,16 +96,22 @@ def fly_path(start, stop, charges, D):
     #Find turning point for path (distance D before last peak)
     turn_point = max(peaks) - D
 
-    return path, path_progress, forces, peaks, turn_point, new_charges, gradient
+    #Need to apply inverse matrix to find the positions in the original set up
+    # and the peak lines
+    peak_lines = []
+    for x in peaks: #Form the peak lines in transformed set up
+        peak_lines.append([numpy.array([x, 0, 0]), numpy.array([x, 10, 0])])
+    
+    og_peak_lines = []
+    for line in peak_lines: #Apply inverse matrix to get 'original' peak lines
+        og_peak_lines.append([numpy.matmul(inverse, line[0]), numpy.matmul(inverse, line[1])])
+    og_peak_pos = []
+    for x in peaks: #Apply inverse matrix to get 'original' peak locations along path
+        og_peak_pos.append(numpy.matmul(inverse, numpy.array([x, 0, 0])))
+    
 
+    return path, path_progress, forces, turn_point, peaks, og_peak_pos, peak_lines, og_peak_lines
 
-#Now we can test the functions so far
-
-charges = generate_charges(1, False)
-path, path_progress, forces, peaks, turn_point, new_charges = fly_path((0, 0), (10, 0), charges, 0.5)
-
-peak_x = [peak for peak in peaks]
-peak_val = [peaks[peak] for peak in peaks]
 
 
 #Now we want to determine polarity with the first path
@@ -117,7 +123,7 @@ def find_polarities(N, charges, plot = False):
     """Determine the polarities of charges from an initial flight path."""
     start = (0, 0)
     stop = (10, 0)
-    path, path_progress, forces, peaks, turn_point, new_charges, gradient = fly_path(start, stop, charges, 1)
+    path, path_progress, forces, turn_point, peaks, og_peak_pos, peak_lines, og_peak_lines = fly_path(start, stop, charges, 1)
     polarities = []
     for x in peaks:
         if peaks[x] > 0:
@@ -142,9 +148,7 @@ def find_polarities(N, charges, plot = False):
         plt.legend()
         plt.show()
 
-    return path, path_progress, forces, peaks, turn_point, new_charges, gradient, polarities
-
-find_polarities(1, charges)
+    return path, path_progress, forces, peaks, turn_point, polarities
 
 #Let's put the plotting into functions
     #Plotting the forces graph
@@ -161,10 +165,8 @@ def plot_forces(forces, path_progress, peaks, turn_point):
     plt.legend()
     plt.show()
 
-plot_forces(forces, path_progress, peaks, turn_point)
-
     #Plotting the actual and possible charge locations
-def plot_field(charges, peaks):
+def plot_field(charges, path, og_peak_pos, og_peak_lines):
     N = len(charges) #Number of point charges
     x = []   # Find locations
     y = []
@@ -181,36 +183,33 @@ def plot_field(charges, peaks):
         ax.annotate(mag[i], xy=(x[i]+0.1, y[i]+0.1), xytext=(x[i]+1, y[i]+1), #Annotate the charges with magnitude
                     arrowprops=dict(facecolor='black', shrink=0.05),
                     )
-    
-    peak_x = [peak for peak in peaks] #Find the peak coordinates
-    plt.vlines(peak_x, 0, 10) ### NEEDS WORK: This is where we plot 
-                        # the lines to show potential charge locations
+        
+    #Extract the path points
+    path_x = []
+    path_y = []
+    for point in path:
+        path_x.append(point[0])
+        path_y.append(point[1])
+    #Plot the path
+    plt.plot(path_x, path_y, 'b', label = 'Path')
+
+    #Extract the peak paths
+    peak_line_x = []
+    peak_line_y = []
+    for line in og_peak_lines:
+        for point in line:
+            peak_line_x.append(point[0])
+            peak_line_y.append(point[1])
+    plt.plot(peak_line_x, peak_line_y, 'r', label = 'Peak line')
     
     plt.xlim(0, 10) #Restrict to 10x10 plot
     plt.ylim(0, 10)
+    plt.legend()
     plt.show()
 
-plot_field(charges, peaks)
 
-#Need a way of storing the data found so far: 
-# possible coordinates of charges, polarities, and magnitudes.
-def data_single():
-    #For each path flown, we store the data found in a list
-    # key: path_num, value: [[path info], [peak info], [charge info]]
-    data = {}
-    charges = generate_charges(1)
-    path, path_progress, forces, peaks, turn_point, new_charges, gradient, polarities = find_polarities(1, charges)
-    min_max = [] #Find if peaks are min or max
-    peak_val = [] #Find peak values
-    peak_x = [] #Find peak locations
-    for peak in peaks: 
-        if peaks[peak] > 0: #Max
-            min_max.append(True)
-        elif peaks[peak] < 0: #Min
-            min_max.append(False)
-        peak_val.append(peaks[peak]) #Values
-        peak_x.append(peak) #Locations along path
+charges = generate_charges(1, False)
+path, path_progress, forces, turn_point, peaks, og_peak_pos, peak_lines, og_peak_lines = fly_path((0, 5), (10, 5), charges, 0.5)
+plot_forces(forces, path_progress, peaks, turn_point)
+plot_field(charges, path, og_peak_pos, og_peak_lines)
 
-    peak_xy = []
-
-    data[1] = [[(0,0), (10,0)], [min_max, peak_val, peak_x]]
