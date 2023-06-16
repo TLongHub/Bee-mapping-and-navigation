@@ -66,6 +66,7 @@ def fly_path(start, stop, charges, D):
     transformation = numpy.array([[math.cos(theta), -math.sin(theta), h*math.cos(theta) - k*math.sin(theta)],
                                    [math.sin(theta), math.cos(theta), h*math.sin(theta) + k*math.cos(theta)],
                                     [0, 0, 1]]) #Transformation matrix
+    inverse = numpy.linalg.inv(transformation) #The inverse matrix of the transformation matrix
         #Next, we apply the matrix
     new_charges = {}
     for charge in charges: #Need to put charges into position vectors
@@ -95,7 +96,7 @@ def fly_path(start, stop, charges, D):
     #Find turning point for path (distance D before last peak)
     turn_point = max(peaks) - D
 
-    return path, path_progress, forces, peaks, turn_point, new_charges
+    return path, path_progress, forces, peaks, turn_point, new_charges, gradient
 
 
 #Now we can test the functions so far
@@ -116,7 +117,7 @@ def find_polarities(N, charges, plot = False):
     """Determine the polarities of charges from an initial flight path."""
     start = (0, 0)
     stop = (10, 0)
-    path, path_progress, forces, peaks, turn_point, new_charges = fly_path(start, stop, charges, 1)
+    path, path_progress, forces, peaks, turn_point, new_charges, gradient = fly_path(start, stop, charges, 1)
     polarities = []
     for x in peaks:
         if peaks[x] > 0:
@@ -140,6 +141,8 @@ def find_polarities(N, charges, plot = False):
         plt.xlim(0, 10)
         plt.legend()
         plt.show()
+
+    return path, path_progress, forces, peaks, turn_point, new_charges, gradient, polarities
 
 find_polarities(1, charges)
 
@@ -191,3 +194,23 @@ plot_field(charges, peaks)
 
 #Need a way of storing the data found so far: 
 # possible coordinates of charges, polarities, and magnitudes.
+def data_single():
+    #For each path flown, we store the data found in a list
+    # key: path_num, value: [[path info], [peak info], [charge info]]
+    data = {}
+    charges = generate_charges(1)
+    path, path_progress, forces, peaks, turn_point, new_charges, gradient, polarities = find_polarities(1, charges)
+    min_max = [] #Find if peaks are min or max
+    peak_val = [] #Find peak values
+    peak_x = [] #Find peak locations
+    for peak in peaks: 
+        if peaks[peak] > 0: #Max
+            min_max.append(True)
+        elif peaks[peak] < 0: #Min
+            min_max.append(False)
+        peak_val.append(peaks[peak]) #Values
+        peak_x.append(peak) #Locations along path
+
+    peak_xy = []
+
+    data[1] = [[(0,0), (10,0)], [min_max, peak_val, peak_x]]
