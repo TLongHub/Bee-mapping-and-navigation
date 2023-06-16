@@ -107,49 +107,13 @@ peak_x = [peak for peak in peaks]
 peak_val = [peaks[peak] for peak in peaks]
 
 
-#Let's try and plot some visuals
-
-N = 1 #Number of point charges
-x = []   # Find locations
-y = []
-mag = []
-for charge in charges:
-    x.append(charge[0])
-    y.append(charge[1])
-    mag.append(charges[charge])   # Find charges
-
-plt.figure(figsize=(10,10)) #Plot 10x10 figure
-ax = plt.gca()
-plt.plot(x, y, 'o') #Plot the point charges
-for i in range(N):
-    ax.annotate(mag[i], xy=(x[i]+0.1, y[i]+0.1), xytext=(x[i]+1, y[i]+1), #Annotate the charges with magnitude
-                arrowprops=dict(facecolor='black', shrink=0.05),
-                )
-plt.vlines(peak_x, 0, 10)
-plt.xlim(0, 10)
-plt.ylim(0, 10)
-plt.show()
-
-
-#Plot the force/progress graph
-
-plt.figure(figsize=(10,10))
-plt.plot(path_progress, forces)
-plt.plot(peak_x, peak_val, 'o')
-plt.vlines(turn_point, min(forces), max(forces), 'g', 'dashed', label = turn_point)
-plt.xlim(0, 10)
-plt.legend()
-plt.show()
-
-
 #Now we want to determine polarity with the first path
     #If we first fly along the edge of our field, we know that every charge will
     #  be on one side of us, thus we can determine their polarity
 
 #Assume a 10x10 field
-def find_polarities(N):
+def find_polarities(N, charges, plot = False):
     """Determine the polarities of charges from an initial flight path."""
-    charges = generate_charges(N)
     start = (0, 0)
     stop = (10, 0)
     path, path_progress, forces, peaks, turn_point, new_charges = fly_path(start, stop, charges, 1)
@@ -159,21 +123,71 @@ def find_polarities(N):
             polarities.append(True)
         else:
             polarities.append(False)
-    print(polarities)
 
-    peak_x = [peak for peak in peaks]
+    #Plotting the force/displacement graph
+    if plot == True:
+        peak_x = [peak for peak in peaks]
+        peak_val = [peaks[peak] for peak in peaks]
+
+        plt.figure(figsize=(10,10))
+        plt.plot(path_progress, forces)
+        for i in range(len(peak_x)):
+            if polarities[i] == True: #If charge positive
+                plt.plot(peak_x, peak_val, 'o', color = 'r')
+            elif polarities[i] == False: #If charge negative
+                plt.plot(peak_x, peak_val, 'o', color = 'g')
+        plt.vlines(turn_point, min(forces), max(forces), 'b', 'dashed', label = turn_point)
+        plt.xlim(0, 10)
+        plt.legend()
+        plt.show()
+
+find_polarities(1, charges)
+
+#Let's put the plotting into functions
+    #Plotting the forces graph
+def plot_forces(forces, path_progress, peaks, turn_point):
+
+    peak_x = [peak for peak in peaks] #Find the peak coordinates
     peak_val = [peaks[peak] for peak in peaks]
 
     plt.figure(figsize=(10,10))
     plt.plot(path_progress, forces)
-    for i in range(len(peak_x)):
-        if polarities[i] == True: #If charge positive
-            plt.plot(peak_x, peak_val, 'o', color = 'r')
-        elif polarities[i] == False: #If charge negative
-            plt.plot(peak_x, peak_val, 'o', color = 'g')
-    plt.vlines(turn_point, min(forces), max(forces), 'b', 'dashed', label = turn_point)
+    plt.plot(peak_x, peak_val, 'o')
+    plt.vlines(turn_point, min(forces), max(forces), 'g', 'dashed', label = turn_point)
     plt.xlim(0, 10)
     plt.legend()
     plt.show()
 
-find_polarities(1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+    #Plotting the actual and possible charge locations
+def plot_field(charges, peaks):
+    N = len(charges) #Number of point charges
+    x = []   # Find locations
+    y = []
+    mag = []
+    for charge in charges:
+        x.append(charge[0])
+        y.append(charge[1])
+        mag.append(charges[charge])   # Find charges
+
+    plt.figure(figsize=(10,10)) #Plot 10x10 figure
+    ax = plt.gca()
+    plt.plot(x, y, 'o') #Plot the point charges
+    for i in range(N):
+        ax.annotate(mag[i], xy=(x[i]+0.1, y[i]+0.1), xytext=(x[i]+1, y[i]+1), #Annotate the charges with magnitude
+                    arrowprops=dict(facecolor='black', shrink=0.05),
+                    )
+    
+    peak_x = [peak for peak in peaks] #Find the peak coordinates
+    plt.vlines(peak_x, 0, 10) ### NEEDS WORK: This is where we plot 
+                        # the lines to show potential charge locations
+    
+    plt.xlim(0, 10) #Restrict to 10x10 plot
+    plt.ylim(0, 10)
+    plt.show()
+
+plot_field(charges, peaks)
+
+#Need a way of storing the data found so far: 
+# possible coordinates of charges, polarities, and magnitudes.
