@@ -58,18 +58,30 @@ def fly_path(start, stop, charges, D):
         #First, we need to translate and rotate the current points in space (charges)
         # to fit the new axis
         #So we find the angle of rotation (angle between x-axis and path)
-    if start[0] != stop[0]:
-        gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
-        theta = math.atan(gradient) #The angle between x-axis and path
-    elif start[1] > stop[1]:
-        theta = numpy.pi/2 #To get around division by zero problem: 90 degree turn
-    else:
-        theta = 3*numpy.pi/2 #90 turn other way, i.e. 270 degree turn
+
+    if stop[1] > start[1]: #Path going 'up'
+        if stop[0] != start[0]:
+            gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
+            theta = math.atan(gradient)
+        else:
+            theta = numpy.pi/2 #Avoid division by zero
+    elif stop[1] == start[1]: #Path running flat (horizontal)
+        if stop[0] < start[0]:
+            theta = numpy.pi #Ensure correct direction
+        else:
+            theta = 0
+    else: #Path going 'down'
+        if stop[0] != start[0]:
+            gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
+            theta = math.atan(gradient) + numpy.pi #Plus 180 to ensure direction correct
+        else:
+            theta = 3*numpy.pi/2 #270 degree rotation to ensure correct direction
+
     h = 0 - start[0] #Difference in x from old origin to new origin
     k = 0 - start[1] #The same for y
         #Now, we formulate a transformation matrix
-    transformation = numpy.array([[math.cos(theta), -math.sin(theta), h*math.cos(theta) - k*math.sin(theta)],
-                                   [math.sin(theta), math.cos(theta), h*math.sin(theta) + k*math.cos(theta)],
+    transformation = numpy.array([[math.cos(-theta), -math.sin(-theta), h*math.cos(-theta) - k*math.sin(-theta)],
+                                   [math.sin(-theta), math.cos(-theta), h*math.sin(-theta) + k*math.cos(-theta)],
                                     [0, 0, 1]]) #Transformation matrix
     inverse = numpy.linalg.inv(transformation) #The inverse matrix of the transformation matrix
         #Next, we apply the matrix
@@ -102,20 +114,20 @@ def fly_path(start, stop, charges, D):
     turn_point = max(peaks) - D
 
     #Need to apply inverse matrix to find the positions in the original set up
-    # and the peak lines
-    peak_lines = []
-    for x in peaks: #Form the peak lines in transformed set up
-        peak_lines.append([numpy.array([x, -10, 1]), numpy.array([x, 10, 1])])
-    
-    og_peak_lines = []
-    for line in peak_lines: #Apply inverse matrix to get 'original' peak lines
-        og_peak_lines.append([numpy.matmul(inverse, line[0]), numpy.matmul(inverse, line[1])])
     og_peak_pos = []
     for x in peaks: #Apply inverse matrix to get 'original' peak locations along path
-        og_peak_pos.append(numpy.matmul(inverse, numpy.array([x, 0, 1])))
-    
+        pos = numpy.matmul(inverse, numpy.array([x, 0, 1]))
+        #pos[1] = -pos[1] #PATCH: for some reason wrong sign in y value 
+        og_peak_pos.append(pos)
 
-    return path, path_progress, forces, turn_point, peaks, og_peak_pos, peak_lines, og_peak_lines
+    #FIND PEAK LINES **AFTER** THE PEAK LOCATIONS AND PATHS HAVE BEEN TRANSFORMED BACK TO ORIGINAL COORDINATES
+    theta_2 = theta + numpy.pi/2
+    og_peak_lines = []
+    for peak in og_peak_pos:
+        og_peak_lines += [[[peak[0]-10, peak[1]-10*numpy.tan(theta_2), 1], [peak[0]+10, peak[1]+10*numpy.tan(theta_2), 1]]]
+    print(og_peak_lines, "\npeak vals", og_peak_pos, "\n angle", theta, theta_2)
+
+    return path, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines
 
 
 
@@ -167,7 +179,6 @@ def plot_forces(forces, path_progress, peaks, turn_point):
     plt.plot(path_progress, forces)
     plt.plot(peak_x, peak_val, 'o')
     plt.vlines(turn_point, min(forces), max(forces), 'g', 'dashed', label = turn_point)
-    plt.xlim(0, 10)
     plt.legend()
     plt.show()
 
@@ -216,12 +227,14 @@ def plot_field(N, charges, paths, og_peak_list):
 
 
 charges = generate_charges(2, False)
-path_1, path_progress, forces, turn_point, peaks, og_peak_pos, peak_lines, og_peak_lines_1 = fly_path((0, 0), (10, 0), charges, 0.5)
+path_1, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_1 = fly_path((0, 10), (10, 10), charges, 0.5)
 plot_forces(forces, path_progress, peaks, turn_point)
-path_2, path_progress, forces, turn_point, peaks, og_peak_pos, peak_lines, og_peak_lines_2 = fly_path((7, 0), (7, 10), charges, 0.5)
+path_2, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_2 = fly_path((10, 10), (10, 0), charges, 0.5)
+plot_forces(forces, path_progress, peaks, turn_point)
+path_3, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_3 = fly_path((10, 0), (0, 0), charges, 0.5)
 plot_forces(forces, path_progress, peaks, turn_point)
 
-paths = [path_1, path_2]
-og_peak_list = [og_peak_lines_1, og_peak_lines_2]
+paths = [path_1, path_2, path_3]
+og_peak_list = [og_peak_lines_1, og_peak_lines_2, og_peak_lines_3]
 plot_field(2, charges, paths, og_peak_list)
 
