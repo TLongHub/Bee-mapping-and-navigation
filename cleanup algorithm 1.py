@@ -217,9 +217,13 @@ plot_forces(forces, path_progress, peaks, turn_point)
 path_2, path_progress, forces, turn_point, peaks, og_peak_pos, peak_lines, og_peak_lines_2 = fly_path((5, 10), (5, 0), charges, 0.5)
 plot_forces(forces, path_progress, peaks, turn_point)
 
-#paths = [path_1, path_2]
-#og_peak_list = [og_peak_lines_1, og_peak_lines_2]
+paths = [path_1, path_2]
+og_peak_list = [og_peak_lines_1, og_peak_lines_2]
 #plot_field(charges, path_1, og_peak_lines_1)
+
+
+#   THE BELOW SEEMS TO WORK TO PLOT PATHS
+#  AND PEAKS ON THE FIELD! HOORAY
 
 N = 2
 x = []  
@@ -238,22 +242,24 @@ for i in range(N):
                 )
 
 #Extract the path points of each path
-path_x = []
-path_y = []
-for point in path_1:
-    path_x.append(point[0])
-    path_y.append(point[1])
-#Plot the path
-plt.plot(path_x, path_y, 'b')
+for path in paths:
+    path_x = []
+    path_y = []
+    for point in path:
+        path_x.append(point[0])
+        path_y.append(point[1])
+    #Plot the path
+    plt.plot(path_x, path_y, 'b')
 
 #Extract the peak paths of each path
-for line in og_peak_lines_1:
-    peak_line_x = []
-    peak_line_y = []
-    for point in line:
-        peak_line_x.append(point[0])
-        peak_line_y.append(point[1])
-    plt.plot(peak_line_x, peak_line_y, 'r', label = 'Peak line')
+for og_peak_lines in og_peak_list:
+    for line in og_peak_lines:
+        peak_line_x = []
+        peak_line_y = []
+        for point in line:
+            peak_line_x.append(point[0])
+            peak_line_y.append(point[1])
+        plt.plot(peak_line_x, peak_line_y, 'r', label = 'Peak line')
 
 plt.xlim(0, 10)
 plt.ylim(0, 10)
