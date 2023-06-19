@@ -197,13 +197,13 @@ def plot_field(charges, path, og_peak_lines):
     plt.plot(path_x, path_y, 'b', label = path)
 
     #Extract the peak paths of each path
-    peak_line_x = []
-    peak_line_y = []
     for line in og_peak_lines:
+        peak_line_x = []
+        peak_line_y = []
         for point in line:
             peak_line_x.append(point[0])
             peak_line_y.append(point[1])
-    plt.plot(peak_line_x, peak_line_y, 'r', label = 'Peak line')
+        plt.plot(peak_line_x, peak_line_y, 'r', label = 'Peak line')
     
     plt.xlim(0, 10) #Restrict to 10x10 plot
     plt.ylim(0, 10)
@@ -219,4 +219,32 @@ plot_forces(forces, path_progress, peaks, turn_point)
 
 #paths = [path_1, path_2]
 #og_peak_list = [og_peak_lines_1, og_peak_lines_2]
-plot_field(charges, path_1, og_peak_lines_1)
+#plot_field(charges, path_1, og_peak_lines_1)
+
+N = 2
+x = []  
+y = []
+mag = []
+for charge in charges:
+    x.append(charge[0])
+    y.append(charge[1])
+    mag.append(charges[charge])  
+
+fig, ax = plt.subplots()
+plt.plot(x, y, 'o')
+for i in range(N):
+    ax.annotate(mag[i], xy=(x[i]+0.1, y[i]+0.1), xytext=(x[i]+1, y[i]+1), 
+                arrowprops=dict(facecolor='black', shrink=0.05),
+                )
+
+for line in og_peak_lines_1:
+    peak_line_x = []
+    peak_line_y = []
+    for point in line:
+        peak_line_x.append(point[0])
+        peak_line_y.append(point[1])
+    plt.plot(peak_line_x, peak_line_y, 'r', label = 'Peak line')
+
+plt.xlim(0, 10)
+plt.ylim(0, 10)
+plt.show()  
