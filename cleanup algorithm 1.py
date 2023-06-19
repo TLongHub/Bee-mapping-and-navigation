@@ -237,6 +237,16 @@ for i in range(N):
                 arrowprops=dict(facecolor='black', shrink=0.05),
                 )
 
+#Extract the path points of each path
+path_x = []
+path_y = []
+for point in path_1:
+    path_x.append(point[0])
+    path_y.append(point[1])
+#Plot the path
+plt.plot(path_x, path_y, 'b')
+
+#Extract the peak paths of each path
 for line in og_peak_lines_1:
     peak_line_x = []
     peak_line_y = []
