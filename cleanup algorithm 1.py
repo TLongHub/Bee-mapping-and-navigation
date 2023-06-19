@@ -61,8 +61,10 @@ def fly_path(start, stop, charges, D):
     if start[0] != stop[0]:
         gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
         theta = math.atan(gradient) #The angle between x-axis and path
+    elif start[1] > stop[1]:
+        theta = numpy.pi/2 #To get around division by zero problem: 90 degree turn
     else:
-        theta = numpy.pi/2 #To get around division by zero problem
+        theta = 3*numpy.pi/2 #90 turn other way, i.e. 270 degree turn
     h = 0 - start[0] #Difference in x from old origin to new origin
     k = 0 - start[1] #The same for y
         #Now, we formulate a transformation matrix
@@ -153,6 +155,7 @@ def find_polarities(N, charges, plot = False):
 
     return path, path_progress, forces, peaks, turn_point, polarities
 
+
 #Let's put the plotting into functions
     #Plotting the forces graph
 def plot_forces(forces, path_progress, peaks, turn_point):
@@ -168,99 +171,57 @@ def plot_forces(forces, path_progress, peaks, turn_point):
     plt.legend()
     plt.show()
 
+
     #Plotting the actual and possible charge locations
-def plot_field(charges, path, og_peak_lines):
-    N = len(charges) #Number of point charges
-    x = []   # Find locations
+def plot_field(N, charges, paths, og_peak_list):
+    N = 2
+    x = []  
     y = []
     mag = []
     for charge in charges:
         x.append(charge[0])
         y.append(charge[1])
-        mag.append(charges[charge])   # Find charges
+        mag.append(charges[charge])  
 
-    plt.figure(figsize=(10,10)) #Plot 10x10 figure
-    ax = plt.gca()
-    plt.plot(x, y, 'o') #Plot the point charges
+    fig, ax = plt.subplots()
+    plt.plot(x, y, 'o')
     for i in range(N):
-        ax.annotate(mag[i], xy=(x[i]+0.1, y[i]+0.1), xytext=(x[i]+1, y[i]+1), #Annotate the charges with magnitude
+        ax.annotate(mag[i], xy=(x[i]+0.1, y[i]+0.1), xytext=(x[i]+1, y[i]+1), 
                     arrowprops=dict(facecolor='black', shrink=0.05),
                     )
-        
+
     #Extract the path points of each path
-    path_x = []
-    path_y = []
-    for point in path:
-        path_x.append(point[0])
-        path_y.append(point[1])
-    #Plot the path
-    plt.plot(path_x, path_y, 'b', label = path)
+    for path in paths:
+        path_x = []
+        path_y = []
+        for point in path:
+            path_x.append(point[0])
+            path_y.append(point[1])
+        #Plot the path
+        plt.plot(path_x, path_y, 'b')
 
     #Extract the peak paths of each path
-    for line in og_peak_lines:
-        peak_line_x = []
-        peak_line_y = []
-        for point in line:
-            peak_line_x.append(point[0])
-            peak_line_y.append(point[1])
-        plt.plot(peak_line_x, peak_line_y, 'r', label = 'Peak line')
-    
-    plt.xlim(0, 10) #Restrict to 10x10 plot
+    for og_peak_lines in og_peak_list:
+        for line in og_peak_lines:
+            peak_line_x = []
+            peak_line_y = []
+            for point in line:
+                peak_line_x.append(point[0])
+                peak_line_y.append(point[1])
+            plt.plot(peak_line_x, peak_line_y, 'r', label = 'Peak line')
+
+    plt.xlim(0, 10)
     plt.ylim(0, 10)
-    plt.legend()
-    plt.show()
+    plt.show() 
 
 
 charges = generate_charges(2, False)
-path_1, path_progress, forces, turn_point, peaks, og_peak_pos, peak_lines, og_peak_lines_1 = fly_path((0, 5), (10, 5), charges, 0.5)
+path_1, path_progress, forces, turn_point, peaks, og_peak_pos, peak_lines, og_peak_lines_1 = fly_path((0, 0), (10, 0), charges, 0.5)
 plot_forces(forces, path_progress, peaks, turn_point)
-path_2, path_progress, forces, turn_point, peaks, og_peak_pos, peak_lines, og_peak_lines_2 = fly_path((5, 10), (5, 0), charges, 0.5)
+path_2, path_progress, forces, turn_point, peaks, og_peak_pos, peak_lines, og_peak_lines_2 = fly_path((7, 0), (7, 10), charges, 0.5)
 plot_forces(forces, path_progress, peaks, turn_point)
 
 paths = [path_1, path_2]
 og_peak_list = [og_peak_lines_1, og_peak_lines_2]
-#plot_field(charges, path_1, og_peak_lines_1)
+plot_field(2, charges, paths, og_peak_list)
 
-
-#   THE BELOW SEEMS TO WORK TO PLOT PATHS
-#  AND PEAKS ON THE FIELD! HOORAY
-
-N = 2
-x = []  
-y = []
-mag = []
-for charge in charges:
-    x.append(charge[0])
-    y.append(charge[1])
-    mag.append(charges[charge])  
-
-fig, ax = plt.subplots()
-plt.plot(x, y, 'o')
-for i in range(N):
-    ax.annotate(mag[i], xy=(x[i]+0.1, y[i]+0.1), xytext=(x[i]+1, y[i]+1), 
-                arrowprops=dict(facecolor='black', shrink=0.05),
-                )
-
-#Extract the path points of each path
-for path in paths:
-    path_x = []
-    path_y = []
-    for point in path:
-        path_x.append(point[0])
-        path_y.append(point[1])
-    #Plot the path
-    plt.plot(path_x, path_y, 'b')
-
-#Extract the peak paths of each path
-for og_peak_lines in og_peak_list:
-    for line in og_peak_lines:
-        peak_line_x = []
-        peak_line_y = []
-        for point in line:
-            peak_line_x.append(point[0])
-            peak_line_y.append(point[1])
-        plt.plot(peak_line_x, peak_line_y, 'r', label = 'Peak line')
-
-plt.xlim(0, 10)
-plt.ylim(0, 10)
-plt.show()  
