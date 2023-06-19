@@ -142,5 +142,4 @@ for i in range(len(maxima_mag_1)):
     R = (-B)/(r-1)
     radii.append(R)
 
-#...not exactly working well...
-
+#...not exactly working well... 
