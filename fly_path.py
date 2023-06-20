@@ -60,11 +60,14 @@ def fly_path(start, stop, charges, D):
         #So we find the angle of rotation (angle between x-axis and path)
 
     if stop[1] > start[1]: #Path going 'up'
-        if stop[0] != start[0]:
+        if stop[0] > start[0]:
             gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
             theta = math.atan(gradient)
-        else:
+        elif stop[0] == start[0]:
             theta = numpy.pi/2 #Avoid division by zero
+        else:
+            gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
+            theta = math.atan(gradient) + numpy.pi
     elif stop[1] == start[1]: #Path running flat (horizontal)
         if stop[0] < start[0]:
             theta = numpy.pi #Ensure correct direction
@@ -185,7 +188,6 @@ def plot_forces(forces, path_progress, peaks, turn_point):
 
     #Plotting the actual and possible charge locations
 def plot_field(N, charges, paths, og_peak_list):
-    N = 2
     x = []  
     y = []
     mag = []
@@ -225,16 +227,28 @@ def plot_field(N, charges, paths, og_peak_list):
     plt.ylim(0, 10)
     plt.show() 
 
-
-charges = generate_charges(2, False)
-path_1, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_1 = fly_path((0, 10), (10, 10), charges, 0.5)
-plot_forces(forces, path_progress, peaks, turn_point)
-path_2, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_2 = fly_path((10, 10), (10, 0), charges, 0.5)
-plot_forces(forces, path_progress, peaks, turn_point)
-path_3, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_3 = fly_path((10, 0), (0, 0), charges, 0.5)
+N = 1
+charges = generate_charges(N, False)
+path_1, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_1 = fly_path((0, 0), (10, 0), charges, 1)
 plot_forces(forces, path_progress, peaks, turn_point)
 
-paths = [path_1, path_2, path_3]
-og_peak_list = [og_peak_lines_1, og_peak_lines_2, og_peak_lines_3]
-plot_field(2, charges, paths, og_peak_list)
+path_2, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_2 = fly_path((turn_point, 0), (turn_point, 10), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
 
+#path_3, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_3 = fly_path((10, turn_point), (0, turn_point), charges, 1)
+#plot_forces(forces, path_progress, peaks, turn_point)
+
+#path_4, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_4 = fly_path((turn_point, 10), (turn_point, 0), charges, 1)
+#plot_forces(forces, path_progress, peaks, turn_point)
+
+#paths = [path_1, path_2, path_3, path_4]
+#og_peak_list = [og_peak_lines_1, og_peak_lines_2, og_peak_lines_3, og_peak_lines_4]
+
+#print(og_peak_pos[0][0])
+#for i in range(len(og_peak_pos)):
+#    path_2, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_2 = fly_path((og_peak_pos[i][0]+0.5, 0), (og_peak_pos[i][0]+0.5, 10), charges, 1)
+#    plot_forces(forces, path_progress, peaks, turn_point)
+
+paths = [path_1, path_2]
+og_peak_list = [og_peak_lines_1, og_peak_lines_2]
+plot_field(N, charges, paths, og_peak_list)
