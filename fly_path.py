@@ -19,7 +19,7 @@ def generate_charges(N, plot = True):
     and visually plots them."""
     charges = {}
     for _ in range(N):
-        charges[(random.random()*10, random.random()*10)] = (random.random()-0.5)*4
+        charges[(random.random()*10, random.random()*10)] = (random.random()-0.5)*6
         
     if plot == True:
         x = []   # Find locations
@@ -115,7 +115,7 @@ def fly_path(start, stop, charges, D):
         #Finally, we can compute the downward forces acting on the hair
     forces = [abs(down_force(new_charges, x)) for x in path_progress] #A list of the absolute value of the 
                                                             # forces on the hair at each point along the path
-    peak_vals = max_locator(forces, 0.01)
+    peak_vals = max_locator(forces, 0.001)
     print(forces, "\n", peak_vals)
 
 #TEMPORARILY REMOVED
@@ -213,16 +213,16 @@ def plot_field(N, charges, paths, og_peak_list):
 
 N = 2
 charges = generate_charges(N, False)
-path_1, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_1 = fly_path((0, 2.5), (10, 2.5), charges, 1)
+path_1, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_1 = fly_path((0, 5), (10, 5), charges, 1)
 plot_forces(forces, path_progress, peaks, turn_point)
 
-path_2, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_2 = fly_path((7.5, 0), (7.5, 10), charges, 1)
+path_2, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_2 = fly_path((5, 0), (5, 10), charges, 1)
 plot_forces(forces, path_progress, peaks, turn_point)
 
-path_3, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_3 = fly_path((10, 7.5), (0, 7.5), charges, 1)
+path_3, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_3 = fly_path((10, 10), (0, 0), charges, 1)
 plot_forces(forces, path_progress, peaks, turn_point)
 
-path_4, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_4 = fly_path((2.5, 10), (2.5, 0), charges, 1)
+path_4, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_4 = fly_path((10, 0), (0, 10), charges, 1)
 plot_forces(forces, path_progress, peaks, turn_point)
 
 paths = [path_1, path_2, path_3, path_4]
