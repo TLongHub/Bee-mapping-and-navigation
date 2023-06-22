@@ -17,9 +17,28 @@ def down_force(charges, bee_location):
 def generate_charges(N, plot = True):
     """Creates a dictionary of N point charge locations and their magnitudes,
     and visually plots them."""
+    min_mag = 2 #Used to simplify scenario
+    min_dist = 2 #Hopefully makes the peaks more distinct
     charges = {}
     for _ in range(N):
-        charges[(random.random()*10, random.random()*10)] = (random.random()-0.5)*6
+        
+        magnitude = 0 
+        while abs(magnitude) < min_mag: #If magnitude not large enough, generate a new one
+            magnitude = (random.random()-0.5)*10
+
+        keep_location = False
+        while keep_location == False:
+            x = random.random()*10 #Generate new locations until we keep it
+            y = random.random()*10
+            if not bool(charges) == True: #If there are no other locations, we keep
+                keep_location = True
+            else:
+                keep_location = True
+                for charge in charges: #If there are others, we check they are far enough away
+                    if euclidean_distance(charge, (x, y)) < min_dist:
+                        keep_location = False
+        if keep_location == True:
+            charges[(x,y)] = magnitude
         
     if plot == True:
         x = []   # Find locations
@@ -115,8 +134,7 @@ def fly_path(start, stop, charges, D):
         #Finally, we can compute the downward forces acting on the hair
     forces = [abs(down_force(new_charges, x)) for x in path_progress] #A list of the absolute value of the 
                                                             # forces on the hair at each point along the path
-    peak_vals = max_locator(forces, 0.001)
-    print(forces, "\n", peak_vals)
+    peak_vals = max_locator(forces, 0.005)
 
 #TEMPORARILY REMOVED
     #We now need to find all the min/max points
