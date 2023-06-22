@@ -188,7 +188,7 @@ def plot_field(N, charges, paths, og_peak_list):
     plt.ylim(0, 10)
     plt.show() 
 
-N = 3
+N = 2
 charges = generate_charges(N, False)
 path_1, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_1 = fly_path((0, 2.5), (10, 2.5), charges, 1)
 plot_forces(forces, path_progress, peaks, turn_point)
@@ -218,7 +218,7 @@ plot_field(N, charges, paths, og_peak_list)
 def explore_charge(N, start, stop, plot = True):
     """Determines the polarity of a point charge using one path to
     determine x coordinate and another to measure polarity."""
-    charges = generate_charges(N, plot)
+    charges = generate_charges(N, True)
     path_1, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_1 = fly_path(start, stop, charges, 1)
     if plot == True:
         plot_forces(forces, path_progress, peaks, turn_point)
@@ -270,6 +270,6 @@ def explore_charge(N, start, stop, plot = True):
 #   TO BE ABLE TO MORE ACCURATELY DETERMINE POLARITIES OF MULTIPLE CHARGES,
 #  WE MUST BE ABLE TO PRECIESLY LOCATE THEM FIRST TO BE ABLE TO REMOVE AS MUCH
 #  ELECTRIC INFLUENCE FROM OTHER CHARGES AS POSSIBLE.
-        #explore_charge(1, (0,5), (10,5))
+        #explore_charge(1, (0,5), (10,5), False)
 #For now, just the one charge case works reliably
 
