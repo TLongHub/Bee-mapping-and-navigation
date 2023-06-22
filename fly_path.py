@@ -43,6 +43,24 @@ def generate_charges(N, plot = True):
     return charges
 
 
+def max_locator(data, threshold):
+    """Takes a list of data and a threshold and finds all the local maxima whose
+    absolute value are greater than that threshold. Returns these data points."""
+    maxima = [] #Initialise the maxima list
+    
+    if data[0] > data[1] and abs(data[0]) > threshold: #Checking if first point is a local maxima
+        maxima.append(data[0]) #Appending that point        # and is over the threshold
+    
+    for i in range(1, len(data)-1):
+        if data[i-1] < data[i] > data[i+1] and abs(data[i]) > threshold: 
+            maxima.append(data[i]) #Check maxima and over threshold and append
+
+    if data[-1] > data[-2] and abs(data[-1]) > threshold:
+        maxima.append(data[-1]) #The same for last point
+    
+    return maxima
+
+
 
 def fly_path(start, stop, charges, D):
     """Fly the path described and measure the force on the hair. 
@@ -95,26 +113,31 @@ def fly_path(start, stop, charges, D):
         new_charges[(tran_ch_vec[0], tran_ch_vec[1])] = charges[charge] #New dictionary with updated coordinates
 
         #Finally, we can compute the downward forces acting on the hair
-    forces = [down_force(new_charges, x) for x in path_progress] #A list of the force on the hair at each point along the path
+    forces = [abs(down_force(new_charges, x)) for x in path_progress] #A list of the absolute value of the 
+                                                            # forces on the hair at each point along the path
+    peak_vals = max_locator(forces, 0.01)
+    print(forces, "\n", peak_vals)
 
-    #We now need to find all the nim/max points
-    l = forces #Copy forces
-    l = [x for x,y in zip(l[0:], l[1:]) if x != y] + [l[-1]] #Remove identical neighbors
-    l = [0] + l + [0] #Append [0] to both endpoints
+#TEMPORARILY REMOVED
+    #We now need to find all the min/max points
+        #l = forces #Copy forces
+        #l = [x for x,y in zip(l[0:], l[1:]) if x != y] + [l[-1]] #Remove identical neighbors
+        #l = [0] + l + [0] #Append [0] to both endpoints
     # Retain elements where each of their neighbors are greater than them
-    local_min = [y for x, y, z in zip(l[0:], l[1:], l[2:]) if x > y < z] #All the local mins
-    local_max = [y for x, y, z in zip(l[0:], l[1:], l[2:]) if x < y > z] #All the local maxs
-    peak_vals = local_min + local_max
+        #local_min = [y for x, y, z in zip(l[0:], l[1:], l[2:]) if x > y < z] #All the local mins
+        #local_max = [y for x, y, z in zip(l[0:], l[1:], l[2:]) if x < y > z] #All the local maxs
+        #peak_vals = local_min + local_max
+#END OF TEMP REMOVAL
 
     #Note the x-value for the location of the mins/maxs
     peaks = {} #X-value (location) and peak value (prop to magnitude but not polarity)
     for peak in peak_vals:
         for x in path_progress:
-            if down_force(new_charges, x) == peak:
+            if abs(down_force(new_charges, x)) == peak:
                 peaks[x] = peak
     
     #Find turning point for path (distance D before last peak)
-    turn_point = max(peaks) - D
+    turn_point = 0 #max(peaks) - D ###TEMPORARILY REMOVED
 
     #Need to apply inverse matrix to find the positions in the original set up
     og_peak_pos = []
@@ -142,7 +165,7 @@ def plot_forces(forces, path_progress, peaks, turn_point):
     plt.figure(figsize=(10,10))
     plt.plot(path_progress, forces)
     plt.plot(peak_x, peak_val, 'o')
-    plt.vlines(turn_point, min(forces), max(forces), 'g', 'dashed', label = turn_point)
+    #plt.vlines(turn_point, min(forces), max(forces), 'g', 'dashed', label = turn_point)
     plt.legend()
     plt.show()
 
