@@ -128,47 +128,8 @@ def fly_path(start, stop, charges, D):
     og_peak_lines = []
     for peak in og_peak_pos:
         og_peak_lines += [[[peak[0]-10, peak[1]-10*numpy.tan(theta_2), 1], [peak[0]+10, peak[1]+10*numpy.tan(theta_2), 1]]]
-    print(og_peak_lines, "\npeak vals", og_peak_pos, "\n angle", theta, theta_2)
 
     return path, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines
-
-
-
-#Now we want to determine polarity with the first path
-    #If we first fly along the edge of our field, we know that every charge will
-    #  be on one side of us, thus we can determine their polarity
-
-#Assume a 10x10 field
-def find_polarities(N, charges, plot = False):
-    """Determine the polarities of charges from an initial flight path."""
-    start = (0, 0)
-    stop = (10, 0)
-    path, path_progress, forces, turn_point, peaks, og_peak_pos, peak_lines, og_peak_lines = fly_path(start, stop, charges, 1)
-    polarities = []
-    for x in peaks:
-        if peaks[x] > 0:
-            polarities.append(True)
-        else:
-            polarities.append(False)
-
-    #Plotting the force/displacement graph
-    if plot == True:
-        peak_x = [peak for peak in peaks]
-        peak_val = [peaks[peak] for peak in peaks]
-
-        plt.figure(figsize=(10,10))
-        plt.plot(path_progress, forces)
-        for i in range(len(peak_x)):
-            if polarities[i] == True: #If charge positive
-                plt.plot(peak_x, peak_val, 'o', color = 'r')
-            elif polarities[i] == False: #If charge negative
-                plt.plot(peak_x, peak_val, 'o', color = 'g')
-        plt.vlines(turn_point, min(forces), max(forces), 'b', 'dashed', label = turn_point)
-        plt.xlim(0, 10)
-        plt.legend()
-        plt.show()
-
-    return path, path_progress, forces, peaks, turn_point, polarities
 
 
 #Let's put the plotting into functions
@@ -227,28 +188,88 @@ def plot_field(N, charges, paths, og_peak_list):
     plt.ylim(0, 10)
     plt.show() 
 
-N = 1
+N = 2
 charges = generate_charges(N, False)
-path_1, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_1 = fly_path((0, 0), (10, 0), charges, 1)
+path_1, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_1 = fly_path((0, 2.5), (10, 2.5), charges, 1)
 plot_forces(forces, path_progress, peaks, turn_point)
 
-path_2, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_2 = fly_path((turn_point, 0), (turn_point, 10), charges, 1)
+path_2, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_2 = fly_path((7.5, 0), (7.5, 10), charges, 1)
 plot_forces(forces, path_progress, peaks, turn_point)
 
-#path_3, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_3 = fly_path((10, turn_point), (0, turn_point), charges, 1)
-#plot_forces(forces, path_progress, peaks, turn_point)
+path_3, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_3 = fly_path((10, 7.5), (0, 7.5), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
 
-#path_4, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_4 = fly_path((turn_point, 10), (turn_point, 0), charges, 1)
-#plot_forces(forces, path_progress, peaks, turn_point)
+path_4, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_4 = fly_path((2.5, 10), (2.5, 0), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
 
-#paths = [path_1, path_2, path_3, path_4]
-#og_peak_list = [og_peak_lines_1, og_peak_lines_2, og_peak_lines_3, og_peak_lines_4]
+paths = [path_1, path_2, path_3, path_4]
+og_peak_list = [og_peak_lines_1, og_peak_lines_2, og_peak_lines_3, og_peak_lines_4]
 
 #print(og_peak_pos[0][0])
 #for i in range(len(og_peak_pos)):
 #    path_2, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_2 = fly_path((og_peak_pos[i][0]+0.5, 0), (og_peak_pos[i][0]+0.5, 10), charges, 1)
 #    plot_forces(forces, path_progress, peaks, turn_point)
 
-paths = [path_1, path_2]
-og_peak_list = [og_peak_lines_1, og_peak_lines_2]
+#paths = [path_1, path_2]
+#og_peak_list = [og_peak_lines_1, og_peak_lines_2]
 plot_field(N, charges, paths, og_peak_list)
+
+
+def explore_charge(N, start, stop, plot = True):
+    """Determines the polarity of a point charge using one path to
+    determine x coordinate and another to measure polarity."""
+    charges = generate_charges(N, True)
+    path_1, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_1 = fly_path(start, stop, charges, 1)
+    if plot == True:
+        plot_forces(forces, path_progress, peaks, turn_point)
+    #og_peak_pos is a list of arrays of locations of force peaks along the path
+
+    #Here we use angle finding code from fly_path function to find angle of path_1
+    if stop[1] > start[1]: #Path going 'up'
+        if stop[0] > start[0]:
+            gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
+            theta = math.atan(gradient)
+        elif stop[0] == start[0]:
+            theta = numpy.pi/2 #Avoid division by zero
+        else:
+            gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
+            theta = math.atan(gradient) + numpy.pi
+    elif stop[1] == start[1]: #Path running flat (horizontal)
+        if stop[0] < start[0]:
+            theta = numpy.pi #Ensure correct direction
+        else:
+            theta = 0
+    else: #Path going 'down'
+        if stop[0] != start[0]:
+            gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
+            theta = math.atan(gradient) + numpy.pi #Plus 180 to ensure direction correct
+        else:
+            theta = 3*numpy.pi/2 #270 degree rotation to ensure correct direction
+    #Want path_i to be perpendicular to path_1, so we add on pi/2 radians
+    theta_i = theta + numpy.pi/2
+
+    polarities = []
+    for peak in og_peak_pos:
+        start = (peak[0]+0.01 - 0.5, peak[1]+0.01*numpy.tan(theta) - 0.5*numpy.tan(theta_i)) 
+        #+0.01, 0.01tan(theta) to shift the point, -1, -tan(theta_i) to make perp line
+        stop = (peak[0]+0.01 + 0.5, peak[1]+0.01*numpy.tan(theta) + 0.5*numpy.tan(theta_i)) 
+        #similar to above
+
+        path_i, path_progress, forces_i, turn_point, peaks_i, og_peak_pos, og_peak_lines_1 = fly_path(start, stop, charges, 1)
+        
+        if forces_i[500] > 0: #Is the hair deflected towards or away from the charge?
+            positive = True #If away, the charge must be positive
+        else:
+            positive = False #If towards, its negative (hair positively charged)
+        
+        polarities.append(positive)
+        #abs(0-forces[0]) < abs(0-forces[1000]) 
+    return polarities
+
+
+#   TO BE ABLE TO MORE ACCURATELY DETERMINE POLARITIES OF MULTIPLE CHARGES,
+#  WE MUST BE ABLE TO PRECIESLY LOCATE THEM FIRST TO BE ABLE TO REMOVE AS MUCH
+#  ELECTRIC INFLUENCE FROM OTHER CHARGES AS POSSIBLE.
+        #explore_charge(1, (0,5), (10,5), False)
+#For now, just the one charge case works reliably
+
