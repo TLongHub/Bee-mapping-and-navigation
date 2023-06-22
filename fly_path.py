@@ -18,7 +18,7 @@ def generate_charges(N, plot = True):
     """Creates a dictionary of N point charge locations and their magnitudes,
     and visually plots them."""
     min_mag = 2 #Used to simplify scenario
-    min_dist = 2 #Hopefully makes the peaks more distinct
+    min_dist = 4 #Hopefully makes the peaks more distinct
     charges = {}
     for _ in range(N):
         
@@ -96,26 +96,30 @@ def fly_path(start, stop, charges, D):
         # to fit the new axis
         #So we find the angle of rotation (angle between x-axis and path)
 
+    if stop[0] != start[0]:
+        gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
+    
     if stop[1] > start[1]: #Path going 'up'
         if stop[0] > start[0]:
-            gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
             theta = math.atan(gradient)
         elif stop[0] == start[0]:
             theta = numpy.pi/2 #Avoid division by zero
         else:
-            gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
             theta = math.atan(gradient) + numpy.pi
+
     elif stop[1] == start[1]: #Path running flat (horizontal)
         if stop[0] < start[0]:
             theta = numpy.pi #Ensure correct direction
         else:
             theta = 0
+
     else: #Path going 'down'
-        if stop[0] != start[0]:
-            gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
-            theta = math.atan(gradient) + numpy.pi #Plus 180 to ensure direction correct
-        else:
+        if stop[0] > start[0]:
+            theta = math.atan(gradient)
+        elif stop[0] == start[0]:
             theta = 3*numpy.pi/2 #270 degree rotation to ensure correct direction
+        else:
+            theta = math.atan(gradient) + numpy.pi #Plus 180 to ensure direction correct
 
     h = 0 - start[0] #Difference in x from old origin to new origin
     k = 0 - start[1] #The same for y
@@ -134,7 +138,7 @@ def fly_path(start, stop, charges, D):
         #Finally, we can compute the downward forces acting on the hair
     forces = [abs(down_force(new_charges, x)) for x in path_progress] #A list of the absolute value of the 
                                                             # forces on the hair at each point along the path
-    peak_vals = max_locator(forces, 0.005)
+    peak_vals = max_locator(forces, 0.001)
 
 #TEMPORARILY REMOVED
     #We now need to find all the min/max points
@@ -229,7 +233,7 @@ def plot_field(N, charges, paths, og_peak_list):
     plt.ylim(0, 10)
     plt.show() 
 
-N = 2
+N = 1
 charges = generate_charges(N, False)
 path_1, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_1 = fly_path((0, 5), (10, 5), charges, 1)
 plot_forces(forces, path_progress, peaks, turn_point)
@@ -237,14 +241,15 @@ plot_forces(forces, path_progress, peaks, turn_point)
 path_2, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_2 = fly_path((5, 0), (5, 10), charges, 1)
 plot_forces(forces, path_progress, peaks, turn_point)
 
-path_3, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_3 = fly_path((10, 10), (0, 0), charges, 1)
+path_3, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_3 = fly_path((0, 0), (10, 10), charges, 1)
 plot_forces(forces, path_progress, peaks, turn_point)
 
-path_4, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_4 = fly_path((10, 0), (0, 10), charges, 1)
+path_4, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_4 = fly_path((0, 10), (10, 0), charges, 1)
 plot_forces(forces, path_progress, peaks, turn_point)
 
 paths = [path_1, path_2, path_3, path_4]
 og_peak_list = [og_peak_lines_1, og_peak_lines_2, og_peak_lines_3, og_peak_lines_4]
+
 
 #print(og_peak_pos[0][0])
 #for i in range(len(og_peak_pos)):
