@@ -233,22 +233,35 @@ def plot_field(N, charges, paths, og_peak_list):
     plt.ylim(0, 10)
     plt.show() 
 
-N = 1
+N = 2
 charges = generate_charges(N, False)
 path_1, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_1 = fly_path((0, 5), (10, 5), charges, 1)
 plot_forces(forces, path_progress, peaks, turn_point)
+xi = []
+for x in peaks:
+    xi.append(x)
 
 path_2, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_2 = fly_path((5, 0), (5, 10), charges, 1)
 plot_forces(forces, path_progress, peaks, turn_point)
+yi = []
+for y in peaks:
+    yi.append(y)
+
+
 
 path_3, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_3 = fly_path((0, 0), (10, 10), charges, 1)
 plot_forces(forces, path_progress, peaks, turn_point)
 
-path_4, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_4 = fly_path((0, 10), (10, 0), charges, 1)
-plot_forces(forces, path_progress, peaks, turn_point)
+h = 0
+k = 0
+theta = numpy.pi/4
+rotation_matrix = numpy.array([[math.cos(theta), -math.sin(theta), h*math.cos(theta) - k*math.sin(theta)],
+                                   [math.sin(theta), math.cos(theta), h*math.sin(theta) + k*math.cos(theta)],
+                                    [0, 0, 1]])
 
-paths = [path_1, path_2, path_3, path_4]
-og_peak_list = [og_peak_lines_1, og_peak_lines_2, og_peak_lines_3, og_peak_lines_4]
+
+paths = [path_1, path_2, path_3]
+og_peak_list = [og_peak_lines_1, og_peak_lines_2, og_peak_lines_3]
 
 
 #print(og_peak_pos[0][0])
@@ -259,6 +272,12 @@ og_peak_list = [og_peak_lines_1, og_peak_lines_2, og_peak_lines_3, og_peak_lines
 #paths = [path_1, path_2]
 #og_peak_list = [og_peak_lines_1, og_peak_lines_2]
 plot_field(N, charges, paths, og_peak_list)
+
+
+
+
+
+
 
 
 def explore_charge(N, start, stop, plot = True):
