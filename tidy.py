@@ -18,7 +18,7 @@ def generate_charges(N, plot = True):
     """Creates a dictionary of N point charge locations and their magnitudes,
     and visually plots them."""
     min_mag = 2 #Used to simplify scenario
-    min_dist = 4 #Hopefully makes the peaks more distinct
+    min_dist = 2.5 #Hopefully makes the peaks more distinct
     charges = {}
     for _ in range(N):
         
@@ -28,8 +28,8 @@ def generate_charges(N, plot = True):
 
         keep_location = False
         while keep_location == False:
-            x = random.random()*10 #Generate new locations until we keep it
-            y = random.random()*10
+            x = random.random()*5 #Generate new locations until we keep it
+            y = random.random()*5
             if not bool(charges) == True: #If there are no other locations, we keep
                 keep_location = True
             else:
@@ -55,8 +55,8 @@ def generate_charges(N, plot = True):
             ax.annotate(mag[i], xy=(x[i]+0.1, y[i]+0.1), xytext=(x[i]+1, y[i]+1), 
                         arrowprops=dict(facecolor='black', shrink=0.05),
                         )
-        plt.xlim(0, 10)
-        plt.ylim(0, 10)
+        plt.xlim(0, 5)
+        plt.ylim(0, 5)
         plt.show()   # Plot charge locations and charges
     
     return charges
@@ -168,11 +168,8 @@ def fly_path(start, stop, charges):
         #returns list of arrays with coordinates of the peak locations 
             #Note: direction of 'peak line' implied by direction of path (perp)
 
-charges = generate_charges(2, plot = False)
 
-
-
-def find_coordinates(start, stop):
+def find_coordinates(start, stop, charges):
     """Find x and y coordinates of candidate locations for charges."""
     if start[0] == stop [0]: #Check if path is vert or horiz
         vertical = True
@@ -204,10 +201,10 @@ def find_coordinates(start, stop):
     return xi, vertical, horizontal
 
 
-def find_candidates(start1, stop1, start2, stop2):
+def find_candidates(start1, stop1, start2, stop2, charges):
     """Find coordinates of candidates for locations of charges."""
-    ai, vertical1, horizontal1 = find_coordinates(start1, stop1)
-    bi, vertical2, horizontal2 = find_coordinates(start2, stop2)
+    ai, vertical1, horizontal1 = find_coordinates(start1, stop1, charges)
+    bi, vertical2, horizontal2 = find_coordinates(start2, stop2, charges)
 
     if horizontal1 == True: #Ensure we have correct x and y coordinates
         xi = ai
@@ -219,18 +216,78 @@ def find_candidates(start1, stop1, start2, stop2):
     candidates = [] 
     for x in xi: #Combine coordinates to get every possible candidate point
         for y in yi:
-            candidates.append((x, y))
+            candidates.append(numpy.array([x, y, 1]))
 
     return candidates
 
-
-candidates = find_candidates((0,5), (10,5), (5,0), (5,10))
-print(candidates, charges)
+charges = generate_charges(2, plot = False)
+candidates = find_candidates((0,2.5), (5,2.5), (2.5,0), (2.5,5), charges)
+print("The number of candidates are:", len(candidates))
 
 
 # NEXT WE FLY THIRD PATH, CONVERT CANDIDATE POINTS INTO NEW COORDINATE SYSTEM
 #  AND SEE WHICH ARE VALID
 
+def validate_candidates(start, stop, candidates, charges):
+    
+    trans_mat, length, path_peak_locations = fly_path(start, stop, charges) #Fly angled 3rd path
+    inverse_trans_mat = numpy.linalg.inv(trans_mat) #Converts into new c.s.
+
+    new_cs_candidates = [] #Convert candidates into new coordinate system
+    for candidate in candidates:
+        new_cs_candidates.append(numpy.matmul(inverse_trans_mat, candidate))
+
+    charge_location_estimates = []
+    for candidate in new_cs_candidates:
+        for location in path_peak_locations:
+            if abs(candidate[0] - location) <= 0.4: #Check candidate lies on new c.s. line
+                charge_location_estimates.append(numpy.matmul(trans_mat, candidate))
+    
+    return charge_location_estimates
+
 start = (0,0)
-stop = (10,10)
-inverse, length, path_peak_locations = fly_path(start, stop, charges)
+stop = (5,5)
+charge_location_estimates = validate_candidates(start, stop, candidates, charges)
+
+print(charge_location_estimates, charges, "\nThe number of estimates are:", len(charge_location_estimates))
+
+
+
+    #Plot charges and estimate locations
+def plot_estimates(candidates, estimates, charges, N):
+    #Plot charges (blue)
+    x = []   # Find locations
+    y = []
+    mag = []
+    for charge in charges:
+        x.append(charge[0])
+        y.append(charge[1])
+        mag.append(charges[charge])   # Find charges
+
+    fig, ax = plt.subplots()
+    plt.plot(x, y, 'o')
+    for i in range(N):
+        ax.annotate(mag[i], xy=(x[i]+0.1, y[i]+0.1), xytext=(x[i]+1, y[i]+1), 
+                    arrowprops=dict(facecolor='black', shrink=0.05),
+                    )
+    #Plot candidates (red)
+    x = []
+    y = []
+    for candidate in candidates:
+        x.append(candidate[0])
+        y.append(candidate[1])
+    plt.plot(x, y, 'x') 
+
+    #Plot estimates (green)
+    x = []
+    y = []
+    for location in charge_location_estimates:
+        x.append(location[0])
+        y.append(location[1])
+    plt.plot(x, y, 'x')     
+
+    plt.xlim(0, 5)
+    plt.ylim(0, 5)
+    plt.show()   # Plot charge locations and charges
+
+plot_estimates(candidates, charge_location_estimates, charges, 2)
