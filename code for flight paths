@@ -1,0 +1,65 @@
+#3 pairs of perpendicular lines rotated about (5, 5)
+path_1, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_1 = fly_path((0, 5), (10, 5), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+path_2, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_2 = fly_path((5, 0), (5, 10), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+path_3, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_3 = fly_path((0, 2.11), (10, 7.89), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+path_4, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_4 = fly_path((7.89, 0), (2.11, 10), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+path_5, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_5 = fly_path((2.11, 0), (7.89, 10), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+path_6, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_6 = fly_path((10, 2.11), (0, 7.89), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+paths = [path_1, path_2, path_3, path_4, path_5, path_6]
+og_peak_list = [og_peak_lines_1, og_peak_lines_2, og_peak_lines_3, og_peak_lines_4, og_peak_lines_5, og_peak_lines_6]
+
+#2 pairs
+path_1, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_1 = fly_path((0, 5), (10, 5), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+path_2, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_2 = fly_path((5, 0), (5, 10), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+path_3, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_3 = fly_path((0, 0), (10, 10), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+path_4, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_4 = fly_path((0, 10), (10, 0), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+paths = [path_1, path_2, path_3, path_4]
+og_peak_list = [og_peak_lines_1, og_peak_lines_2, og_peak_lines_3, og_peak_lines_4]
+
+# 2x boxes 
+path_1, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_1 = fly_path((0, 0), (10, 0), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+path_2, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_2 = fly_path((10, 0), (10, 10), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+path_3, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_3 = fly_path((10, 10), (0, 10), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+path_4, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_4 = fly_path((0, 10), (0, 0), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+path_5, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_5 = fly_path((-2.07, 5), (5, -2.07), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+path_6, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_6 = fly_path((5, -2.07), (12.07, 5), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+path_7, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_7 = fly_path((12.07, 5), (5, 12.07), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+path_8, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_8 = fly_path((5, 12.07), (-2.07, 5), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+
+paths = [path_1, path_2, path_3, path_4, path_5, path_6, path_7, path_8]
+og_peak_list = [og_peak_lines_1, og_peak_lines_2, og_peak_lines_3, og_peak_lines_4, og_peak_lines_5, og_peak_lines_6, og_peak_lines_7, og_peak_lines_8]

@@ -17,9 +17,28 @@ def down_force(charges, bee_location):
 def generate_charges(N, plot = True):
     """Creates a dictionary of N point charge locations and their magnitudes,
     and visually plots them."""
+    min_mag = 2 #Used to simplify scenario
+    min_dist = 4 #Hopefully makes the peaks more distinct
     charges = {}
     for _ in range(N):
-        charges[(random.random()*10, random.random()*10)] = (random.random()-0.5)*4
+        
+        magnitude = 0 
+        while abs(magnitude) < min_mag: #If magnitude not large enough, generate a new one
+            magnitude = (random.random()-0.5)*10
+
+        keep_location = False
+        while keep_location == False:
+            x = random.random()*10 #Generate new locations until we keep it
+            y = random.random()*10
+            if not bool(charges) == True: #If there are no other locations, we keep
+                keep_location = True
+            else:
+                keep_location = True
+                for charge in charges: #If there are others, we check they are far enough away
+                    if euclidean_distance(charge, (x, y)) < min_dist:
+                        keep_location = False
+        if keep_location == True:
+            charges[(x,y)] = magnitude
         
     if plot == True:
         x = []   # Find locations
@@ -43,6 +62,24 @@ def generate_charges(N, plot = True):
     return charges
 
 
+def max_locator(data, threshold):
+    """Takes a list of data and a threshold and finds all the local maxima whose
+    absolute value are greater than that threshold. Returns these data points."""
+    maxima = [] #Initialise the maxima list
+    
+    if data[0] > data[1] and abs(data[0]) > threshold: #Checking if first point is a local maxima
+        maxima.append(data[0]) #Appending that point        # and is over the threshold
+    
+    for i in range(1, len(data)-1):
+        if data[i-1] < data[i] > data[i+1] and abs(data[i]) > threshold: 
+            maxima.append(data[i]) #Check maxima and over threshold and append
+
+    if data[-1] > data[-2] and abs(data[-1]) > threshold:
+        maxima.append(data[-1]) #The same for last point
+    
+    return maxima
+
+
 
 def fly_path(start, stop, charges, D):
     """Fly the path described and measure the force on the hair. 
@@ -59,26 +96,30 @@ def fly_path(start, stop, charges, D):
         # to fit the new axis
         #So we find the angle of rotation (angle between x-axis and path)
 
+    if stop[0] != start[0]:
+        gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
+    
     if stop[1] > start[1]: #Path going 'up'
         if stop[0] > start[0]:
-            gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
             theta = math.atan(gradient)
         elif stop[0] == start[0]:
             theta = numpy.pi/2 #Avoid division by zero
         else:
-            gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
             theta = math.atan(gradient) + numpy.pi
+
     elif stop[1] == start[1]: #Path running flat (horizontal)
         if stop[0] < start[0]:
             theta = numpy.pi #Ensure correct direction
         else:
             theta = 0
+
     else: #Path going 'down'
-        if stop[0] != start[0]:
-            gradient = (stop[1]-start[1])/(stop[0]-start[0]) #How much y increase happens for unit x increase
-            theta = math.atan(gradient) + numpy.pi #Plus 180 to ensure direction correct
-        else:
+        if stop[0] > start[0]:
+            theta = math.atan(gradient)
+        elif stop[0] == start[0]:
             theta = 3*numpy.pi/2 #270 degree rotation to ensure correct direction
+        else:
+            theta = math.atan(gradient) + numpy.pi #Plus 180 to ensure direction correct
 
     h = 0 - start[0] #Difference in x from old origin to new origin
     k = 0 - start[1] #The same for y
@@ -95,26 +136,30 @@ def fly_path(start, stop, charges, D):
         new_charges[(tran_ch_vec[0], tran_ch_vec[1])] = charges[charge] #New dictionary with updated coordinates
 
         #Finally, we can compute the downward forces acting on the hair
-    forces = [down_force(new_charges, x) for x in path_progress] #A list of the force on the hair at each point along the path
+    forces = [abs(down_force(new_charges, x)) for x in path_progress] #A list of the absolute value of the 
+                                                            # forces on the hair at each point along the path
+    peak_vals = max_locator(forces, 0.001)
 
-    #We now need to find all the nim/max points
-    l = forces #Copy forces
-    l = [x for x,y in zip(l[0:], l[1:]) if x != y] + [l[-1]] #Remove identical neighbors
-    l = [0] + l + [0] #Append [0] to both endpoints
+#TEMPORARILY REMOVED
+    #We now need to find all the min/max points
+        #l = forces #Copy forces
+        #l = [x for x,y in zip(l[0:], l[1:]) if x != y] + [l[-1]] #Remove identical neighbors
+        #l = [0] + l + [0] #Append [0] to both endpoints
     # Retain elements where each of their neighbors are greater than them
-    local_min = [y for x, y, z in zip(l[0:], l[1:], l[2:]) if x > y < z] #All the local mins
-    local_max = [y for x, y, z in zip(l[0:], l[1:], l[2:]) if x < y > z] #All the local maxs
-    peak_vals = local_min + local_max
+        #local_min = [y for x, y, z in zip(l[0:], l[1:], l[2:]) if x > y < z] #All the local mins
+        #local_max = [y for x, y, z in zip(l[0:], l[1:], l[2:]) if x < y > z] #All the local maxs
+        #peak_vals = local_min + local_max
+#END OF TEMP REMOVAL
 
     #Note the x-value for the location of the mins/maxs
     peaks = {} #X-value (location) and peak value (prop to magnitude but not polarity)
     for peak in peak_vals:
         for x in path_progress:
-            if down_force(new_charges, x) == peak:
+            if abs(down_force(new_charges, x)) == peak:
                 peaks[x] = peak
     
     #Find turning point for path (distance D before last peak)
-    turn_point = max(peaks) - D
+    turn_point = 0 #max(peaks) - D ###TEMPORARILY REMOVED
 
     #Need to apply inverse matrix to find the positions in the original set up
     og_peak_pos = []
@@ -142,7 +187,7 @@ def plot_forces(forces, path_progress, peaks, turn_point):
     plt.figure(figsize=(10,10))
     plt.plot(path_progress, forces)
     plt.plot(peak_x, peak_val, 'o')
-    plt.vlines(turn_point, min(forces), max(forces), 'g', 'dashed', label = turn_point)
+    #plt.vlines(turn_point, min(forces), max(forces), 'g', 'dashed', label = turn_point)
     plt.legend()
     plt.show()
 
@@ -190,20 +235,34 @@ def plot_field(N, charges, paths, og_peak_list):
 
 N = 2
 charges = generate_charges(N, False)
-path_1, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_1 = fly_path((0, 2.5), (10, 2.5), charges, 1)
+path_1, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_1 = fly_path((0, 5), (10, 5), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+xi = []
+for x in peaks:
+    xi.append(x)
+
+path_2, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_2 = fly_path((5, 0), (5, 10), charges, 1)
+plot_forces(forces, path_progress, peaks, turn_point)
+yi = []
+for y in peaks:
+    yi.append(y)
+
+
+
+path_3, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_3 = fly_path((0, 0), (10, 10), charges, 1)
 plot_forces(forces, path_progress, peaks, turn_point)
 
-path_2, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_2 = fly_path((7.5, 0), (7.5, 10), charges, 1)
-plot_forces(forces, path_progress, peaks, turn_point)
+h = 0
+k = 0
+theta = numpy.pi/4
+rotation_matrix = numpy.array([[math.cos(theta), -math.sin(theta), h*math.cos(theta) - k*math.sin(theta)],
+                                   [math.sin(theta), math.cos(theta), h*math.sin(theta) + k*math.cos(theta)],
+                                    [0, 0, 1]])
 
-path_3, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_3 = fly_path((10, 7.5), (0, 7.5), charges, 1)
-plot_forces(forces, path_progress, peaks, turn_point)
 
-path_4, path_progress, forces, turn_point, peaks, og_peak_pos, og_peak_lines_4 = fly_path((2.5, 10), (2.5, 0), charges, 1)
-plot_forces(forces, path_progress, peaks, turn_point)
+paths = [path_1, path_2, path_3]
+og_peak_list = [og_peak_lines_1, og_peak_lines_2, og_peak_lines_3]
 
-paths = [path_1, path_2, path_3, path_4]
-og_peak_list = [og_peak_lines_1, og_peak_lines_2, og_peak_lines_3, og_peak_lines_4]
 
 #print(og_peak_pos[0][0])
 #for i in range(len(og_peak_pos)):
@@ -213,6 +272,12 @@ og_peak_list = [og_peak_lines_1, og_peak_lines_2, og_peak_lines_3, og_peak_lines
 #paths = [path_1, path_2]
 #og_peak_list = [og_peak_lines_1, og_peak_lines_2]
 plot_field(N, charges, paths, og_peak_list)
+
+
+
+
+
+
 
 
 def explore_charge(N, start, stop, plot = True):
