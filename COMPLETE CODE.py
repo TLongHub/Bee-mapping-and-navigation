@@ -14,51 +14,82 @@ def down_force(charges, bee_location):
         total_force += (charges[charge]*charge[1])/((bee_location-charge[0])**2 + charge[1]**2)**(5/2)
     return total_force
 
-def generate_charges(N, plot = True):
+def plot_field(charges, N):
+    #PLOTTING   
+    x = []   # Find locations
+    y = []
+    mag = []
+    for charge in charges:
+        x.append(charge[0])
+        y.append(charge[1])
+        mag.append(charges[charge])   # Find charges
+
+    fig, ax = plt.subplots()
+    plt.plot(x, y, 'o')
+    for i in range(N):
+        ax.annotate(mag[i], xy=(x[i]+0.1, y[i]+0.1), xytext=(x[i]+1, y[i]+1), 
+                    arrowprops=dict(facecolor='black', shrink=0.05),
+                    )
+    plt.xlim(0, 5)
+    plt.ylim(0, 5)
+    plt.show()   # Plot charge locations and charges
+
+
+### NEW GENERATE CHARGES FUNCTION ###
+
+def generate_charges(N, delta, plot = True):
     """Creates a dictionary of N point charge locations and their magnitudes,
     and visually plots them."""
-    min_mag = 2 #Used to simplify scenario
-    min_dist = 2.5 #Hopefully makes the peaks more distinct
-    charges = {}
-    for _ in range(N):
-        
-        magnitude = 0 
-        while abs(magnitude) < min_mag: #If magnitude not large enough, generate a new one
-            magnitude = (random.random()-0.5)*10
+    global D1
+    min_mag = 2
+    num_charges = 0 
+    attempts = 0
 
-        keep_location = False
-        while keep_location == False:
-            x = random.random()*5 #Generate new locations until we keep it
-            y = random.random()*5
-            if not bool(charges) == True: #If there are no other locations, we keep
-                keep_location = True
-            else:
-                keep_location = True
-                for charge in charges: #If there are others, we check they are far enough away
-                    if euclidean_distance(charge, (x, y)) < min_dist:
-                        keep_location = False
-        if keep_location == True:
-            charges[(x,y)] = magnitude
+    while num_charges < N: #Keep trying until we get N charges
+        #Every 50 attempts, we reset and try again
+        if attempts % 100 == 0:
+            charges = {}
+            num_charges = 0
+
+        #GENERATE charge properties
+            #Magnitude
+        magnitude = random.random()*5 + min_mag #(between 2 and 7)
+            #Location
+        x = random.random()*5 #(randomly placed in 5x5 field)
+        y = random.random()*5
         
-    if plot == True:
-        x = []   # Find locations
-        y = []
-        mag = []
+        #CHECK if properties acceptable
+        acceptable = True
         for charge in charges:
-            x.append(charge[0])
-            y.append(charge[1])
-            mag.append(charges[charge])   # Find charges
+            #Min distance
+            if euclidean_distance(charge, (x, y)) < delta:
+                acceptable = False
+            #Min distance for x and y coordinates
+            if abs(charge[0]-x) < delta or abs(charge[1]-y) < delta:
+                acceptable = False
+            #Min diagonal distance of delta
+            a = delta*numpy.sin(numpy.pi/4)
+            c1 = charge[0] + charge[1] - 2*a
+            c2 = charge[0] + charge[1] + 2*a
+            if c1 < y+x < c2: 
+                acceptable = False
+            k1 = -charge[0] + charge[1] + 2*a
+            k2 = -charge[0] + charge[1] - 2*a
+            if k1 > y-x > k2: 
+                acceptable = False
+            #Max interactive forces between charges
+            interaction = abs(magnitude*charges[charge]) / (euclidean_distance(charge, (x,y))**2)
+            if interaction > D1 / 4:
+                acceptable = False
 
-        fig, ax = plt.subplots()
-        plt.plot(x, y, 'o')
-        for i in range(N):
-            ax.annotate(mag[i], xy=(x[i]+0.1, y[i]+0.1), xytext=(x[i]+1, y[i]+1), 
-                        arrowprops=dict(facecolor='black', shrink=0.05),
-                        )
-        plt.xlim(0, 5)
-        plt.ylim(0, 5)
-        plt.show()   # Plot charge locations and charges
+        #ACT on results of checks
+        attempts += 1
+        if acceptable == True:
+            charges[(x,y)] = magnitude
+            num_charges += 1
     
+    if plot == True:
+        plot_field(charges, N)
     return charges
 
 
@@ -111,7 +142,7 @@ def axis_path_angle(start, stop):
 def fly_path(start, stop, charges):
     """Fly the path described and measure the force on the hair. 
     Notes the locations and sign of peaks and location of turning point (x1 + D)."""
-
+    global D1
     #INITIALISING VARIABLES 
     increments = 1000 #The number of increments
     dx = (stop[0]-start[0])/increments #Change in x
@@ -154,7 +185,7 @@ def fly_path(start, stop, charges):
                                                             # forces on the hair at each point along the path
         #Find the peak locations
 
-    peak_vals = max_locator(forces, 0.001) #tolerance value can be changed as needed
+    peak_vals = max_locator(forces, 0.01) #THRESHOLD - tolerance value can be changed as needed
     path_peak_locations = [x for x in path_progress if (abs(down_force(new_charges, x)) in peak_vals)] #the locations of peaks
 
         #Find the peak locations in the xy coordinate system in the field
@@ -220,10 +251,6 @@ def find_candidates(start1, stop1, start2, stop2, charges):
 
     return candidates
 
-charges = generate_charges(2, plot = False)
-candidates = find_candidates((0,2.5), (5,2.5), (2.5,0), (2.5,5), charges)
-print("The number of candidates are:", len(candidates))
-
 
 # NEXT WE FLY THIRD PATH, CONVERT CANDIDATE POINTS INTO NEW COORDINATE SYSTEM
 #  AND SEE WHICH ARE VALID
@@ -231,6 +258,7 @@ print("The number of candidates are:", len(candidates))
 def validate_candidates(start, stop, candidates, charges):
     
     trans_mat, length, path_peak_locations = fly_path(start, stop, charges) #Fly angled 3rd path
+    print("\nThe number of 3rd path peaks is:", len(path_peak_locations))
     inverse_trans_mat = numpy.linalg.inv(trans_mat) #Converts into new c.s.
 
     new_cs_candidates = [] #Convert candidates into new coordinate system
@@ -240,17 +268,10 @@ def validate_candidates(start, stop, candidates, charges):
     charge_location_estimates = []
     for candidate in new_cs_candidates:
         for location in path_peak_locations:
-            if abs(candidate[0] - location) <= 0.4: #Check candidate lies on new c.s. line
+            if abs(candidate[0] - location) <= 0.25: #Check candidate lies on new c.s. line
                 charge_location_estimates.append(numpy.matmul(trans_mat, candidate))
     
     return charge_location_estimates
-
-start = (0,0)
-stop = (5,5)
-charge_location_estimates = validate_candidates(start, stop, candidates, charges)
-
-print(charge_location_estimates, charges, "\nThe number of estimates are:", len(charge_location_estimates))
-
 
 
     #Plot charges and estimate locations
@@ -281,7 +302,7 @@ def plot_estimates(candidates, estimates, charges, N):
     #Plot estimates (green)
     x = []
     y = []
-    for location in charge_location_estimates:
+    for location in estimates:
         x.append(location[0])
         y.append(location[1])
     plt.plot(x, y, 'x')     
@@ -290,4 +311,129 @@ def plot_estimates(candidates, estimates, charges, N):
     plt.ylim(0, 5)
     plt.show()   # Plot charge locations and charges
 
-plot_estimates(candidates, charge_location_estimates, charges, 2)
+
+    #Generate charges
+#N = 2
+#charges = generate_charges(N, 1.5, plot = False)
+    #Find candidates (xy c.s.)
+#candidates = find_candidates((0,2.5), (5,2.5), (2.5,0), (2.5,5), charges)
+#print("The number of candidates are:", len(candidates))
+
+    #Initiate angled 3rd path
+#start = (0,0)
+#stop = (5,5)
+#charge_location_estimates = validate_candidates(start, stop, candidates, charges)
+
+#print(charge_location_estimates, charges, "\nThe number of estimates are:", len(charge_location_estimates))
+
+    #Plot findings
+#plot_estimates(candidates, charge_location_estimates, charges, N)
+
+
+
+#VALIDATING WITH TWO COORDINATES
+
+def validate_candidates_v2(start1, stop1, start2, stop2, candidates, charges):
+        #FOR NOW, FIX THE PATHS
+    start1 = (0,0)
+    stop1 = (5,5)
+    start2 = (5,0)
+    stop2 = (0,5)    
+    #Transform charges into new coordinate system
+    #Fly horizontal and vertical paths
+    trans_mat, length1, path_peak_locations1 = fly_path(start1, stop1, charges)
+    _, length2, path_peak_locations2 = fly_path(start2, stop2, charges)
+    #Mark x' and y' coordinates
+    x_prime = path_peak_locations1
+    y_prime = [coord - length2/2 for coord in path_peak_locations2] 
+            # '- length2/2' to acount for paths intersecting in their middle
+    #Find new candidates in this c.s.
+    candidates_prime = []
+    for x in x_prime:
+        for y in y_prime:
+            candidates_prime.append((x,y))
+    #Convert old candidates into this c.s.
+    inverse_trans_mat = numpy.linalg.inv(trans_mat) #Converts into new c.s.
+    new_cs_candidates = [] #Convert candidates into new coordinate system
+    for candidate in candidates:
+        new_cs_candidates.append(numpy.matmul(inverse_trans_mat, candidate))
+    #Compare candidates and return matches
+    estimates = []
+    for point in new_cs_candidates: #Working in new angled c.s.
+        for point2 in candidates_prime:
+            if euclidean_distance(point, point2) < 1: #If sufficiently close
+                estimates.append(numpy.matmul(trans_mat, point)) #Add the original c.s. candidate to estimates
+  
+    return estimates
+
+D1 = 8 #Arbitrarily selected
+    #Generate charges
+N = 8
+charges = generate_charges(N, 0, plot = False) #2nd arg is delta (min distance between charges on each axis)
+    #Find candidates (xy c.s.)
+candidates = find_candidates((0,2.5), (5,2.5), (2.5,0), (2.5,5), charges)
+print("The number of candidates are:", len(candidates))
+
+estimates = validate_candidates_v2(0, 0, 0, 0, candidates, charges)
+plot_estimates(candidates, estimates, charges, N)
+print(len(estimates))
+
+
+
+### TESTING ###
+# Firstly, what proportion of runs yield the same number of estimates as actual charges?
+N = 2
+def find_prop_success():
+    tally = 0
+    for _ in range(1000):
+        charges = generate_charges(N, 0.25, plot = False)
+        candidates = find_candidates((0,2.5), (5,2.5), (2.5,0), (2.5,5), charges)
+        estimates = validate_candidates_v2(0, 0, 0, 0, candidates, charges)
+        if len(estimates) == len(charges):
+            tally += 1
+    print("The proportion of runs that guess the right number of charges is:", tally/1000)
+
+#find_prop_success()
+
+#Secondly, what proportion of 'successful' runs (those which estimate the right number of charges)
+#  have all estimates within distance x of actual charge location? 
+def find_prop_closer_than_x(x):
+    successes = 0
+    tally = 0
+    while successes < 1000:
+        charges = generate_charges(N, 0.25, plot = False)
+        candidates = find_candidates((0,2.5), (5,2.5), (2.5,0), (2.5,5), charges)
+        estimates = validate_candidates_v2(0, 0, 0, 0, candidates, charges)
+        if len(estimates) == len(charges):
+            successes += 1
+            accurate = True
+            for estimate in estimates:
+                for charge in charges:
+                    if x < euclidean_distance(estimate, charge) < 1.5: #Close enough to be the right estimate but too far to be accurate
+                        accurate = False
+            if accurate == True:
+                tally += 1
+    print("The proportion of successful runs that estimate with an accuracy of within distance x from actual location are:", tally/successes)
+
+x = 0.2
+#find_prop_closer_than_x(x)
+
+#Next, RMSE of estimates from actual charges
+def find_RMSE(delta):
+    successes = 0
+    tally = 0
+    SE = []
+    while successes < 1000:
+        charges = generate_charges(N, delta, plot = False)
+        candidates = find_candidates((0,2.5), (5,2.5), (2.5,0), (2.5,5), charges)
+        estimates = validate_candidates_v2(0, 0, 0, 0, candidates, charges)
+        if len(estimates) == len(charges):
+            successes += 1
+            for estimate in estimates:
+                for charge in charges:
+                    if euclidean_distance(estimate, charge) < 1: #Close enough to be the right estimate but too far to be accurate
+                        SE.append(euclidean_distance(charge, estimate)**2)
+    MSE = sum(SE)/len(SE)
+    RMSE = MSE**0.5
+    print("The RMSE for 2000 estimated charge locations is:", RMSE)
+
